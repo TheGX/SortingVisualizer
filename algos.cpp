@@ -112,3 +112,61 @@ bool bubleSort(int* arrayToSort, int count, coroutine_t* co){
     COROUTINE_END(co);
     return sorted;
 }
+
+//  Quick Sort: O(nlog(n)) - worst is O(n^2)
+    // Recursive;
+    // Pick a pivot;
+    // Swap itemLeft and itemRight:
+    // itemLeft: starting left, item smaller than pivot;
+    // itemRight: starting Right, item larger than pivot;
+    // Swap itemLeft with pivot if itemLeft_index < itemRight_index;
+
+
+inline static
+int partition(int arr[], int low, int high, coroutine_t* co) {
+
+	int pivot = arr[high];  // pivot
+	int i = (low - 1);  // Index of smaller element
+    int j;
+    COROUTINE_START(co);
+	for (j = low; j <= high - 1; j++)
+	{
+		// If current element is smaller than the pivot
+		if (arr[j] < pivot)
+		{
+			i++;  // increment index of smaller element
+			swap(&arr[i], &arr[j]);
+        
+            //PUT cursor here
+            //co->cursorPosition = i;
+            COROUTINE_WAIT(co, 10, 5.0f);
+        }
+	}
+	swap(&arr[i + 1], &arr[high]);
+    COROUTINE_END(co);
+	return (i + 1);
+}
+
+inline static
+bool quickSort(int arr[], int low, int high, coroutine_t* co) {
+
+    if (low < high) {
+	/* pi is partitioning index, arr[p] is now
+	   at right place */
+        int pi = partition(arr, low, high, co);
+
+        // Separately sort elements before
+        // partition and after partition
+        quickSort(arr, low, pi - 1, co);
+        quickSort(arr, pi + 1, high, co);
+        return true;
+    }
+        return false;
+}
+
+inline static
+bool quickSortCaller(int* arrayToSort, int count, coroutine_t* co){
+
+    return quickSort(arrayToSort, 0, count - 1, co);
+
+}

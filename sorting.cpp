@@ -98,8 +98,13 @@ int main(int, char**)
     copyArryIntToFloat(randomInts, _countOf(randomInts), randomFloats);
 
 
-    const char* sortingAlgos[] = { "Selection Sort", "Buble Sort"};
-    bool (*funcs[]) (int* arrayToSort, int count, coroutine_t* co)= { selectionSort, bubleSort};
+    const char* sortingAlgos[] = { "Selection Sort", "Buble Sort", "Quick Sort", "Heap Sort", "Insertion Sort", "Merge Sort"};
+    //inline static const char* algorithmsNames[] = { "BitonicSort", "BogoSort", "CocktailSort", "CombSort", "GnomeSort", 
+        //"MergeSort", "PancakeSort", "RadixSort (LSD)", "RadixSort (MSD)", "ShellSort", "StalinSort" };
+
+    //TODO: Fix this to be dynamic linked with the sortingAlgos array
+    // Maybe implement map of algo name and sorting func
+    bool (*funcs[]) (int* arrayToSort, int count, coroutine_t* co)= { selectionSort, bubleSort, quickSortCaller};
     
             
     // Main loop
