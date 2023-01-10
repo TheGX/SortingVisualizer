@@ -21,6 +21,7 @@ typedef struct coroutine_t
     float elapsed;
     float dt;
     float time = 5;
+    bool paused = false;
     unsigned cursorPosition;
     int index;
 } coroutine_t;
