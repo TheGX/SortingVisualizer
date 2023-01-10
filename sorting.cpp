@@ -17,6 +17,8 @@
 #include "Includes/implot.cpp"
 #include "Includes/implot_items.cpp"
 #include "algos.cpp"
+#include "algorithm"
+#include "unordered_map"
 
 // [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
 // To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma.
@@ -25,6 +27,9 @@
 #pragma comment(lib, "legacy_stdio_definitions")
 #endif
 
+
+typedef bool (*sortingFunction) (int* arrayToSort, int count, coroutine_t* co);
+    
 static ImVec4 PLOT_BARS_NORMAL_COLOR = {0.2f, 0.41f, 0.69f, 1.f};
 static ImVec4 PLOT_BARS_CURSOR_COLOR = {1.f, 0.f, 0.f, 1.f};
 
@@ -91,6 +96,10 @@ int main(int, char**)
     float randomFloats[_countOf(randomInts)];
     int arrayToSort[_countOf(randomInts)];
     float sortedFloats[_countOf(randomFloats)];
+    bool stdSorted; 
+            
+    static coroutine_t s_co;
+    coroutine_t* co = &s_co;
 
     getNRandomInts(_countOf(randomInts));
     //"Reset" array to be sorted back to random
@@ -102,10 +111,15 @@ int main(int, char**)
     //inline static const char* algorithmsNames[] = { "BitonicSort", "BogoSort", "CocktailSort", "CombSort", "GnomeSort", 
         //"MergeSort", "PancakeSort", "RadixSort (LSD)", "RadixSort (MSD)", "ShellSort", "StalinSort" };
 
-    //TODO: Fix this to be dynamic linked with the sortingAlgos array
-    // Maybe implement map of algo name and sorting func
-    bool (*funcs[]) (int* arrayToSort, int count, coroutine_t* co)= { selectionSort, bubleSort, quickSortCaller};
-    
+    sortingFunction funcs[] = { selectionSort, bubleSort, quickSort, heapSort};
+    std::unordered_map<const char*, sortingFunction> map;
+
+    for( int sortingAlgoName = 0; 
+            sortingAlgoName < _countOf(sortingAlgos) && sortingAlgoName < _countOf(funcs);
+            sortingAlgoName++)
+    {
+        map.emplace(sortingAlgos[sortingAlgoName], funcs[sortingAlgoName]);
+    }
             
     // Main loop
     while (!glfwWindowShouldClose(window))
@@ -125,16 +139,18 @@ int main(int, char**)
 
         // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about ear ImGui!).
         //if (show_demo_window)
-            //ImGui::ShowDemoWindow(&show_demo_window);
+            ImGui::ShowDemoWindow(&show_demo_window);
         
         // 3. Show another simple window.
         if (show_another_window)
         {
             ImGui::SetNextWindowSize(ImVec2(1729, 713),ImGuiCond_Always);
             ImGui::Begin("Sorting Algorithm Window", &show_another_window);   
-            ImGui::Text("Sort Algos");
             
             // Algorithm drop Menu
+            ImGui::Text("Sort Algos");
+            ImGui::SameLine();
+            
             static int currentAlgo = 0;
             if (ImGui::Combo("##Sorting Algo", &currentAlgo, sortingAlgos, IM_ARRAYSIZE(sortingAlgos))) {
                 
@@ -144,6 +160,10 @@ int main(int, char**)
                 sorted = false;
             }
             
+            ImGui::Text("Coroutine Speed time");
+            ImGui::SameLine();
+            ImGui::SliderFloat("##Coroutine_dt", &co->dt, 1, 5);
+
             ImGui::SameLine();
             if (ImGui::Button("New Random Sequence")) {
                 //TODO: randomInts should not be global, if it is then no need for the size as arg
@@ -163,13 +183,16 @@ int main(int, char**)
                 ImPlot::EndPlot();
             }
             
-            //Coroutine stuff
-            static coroutine_t s_co;
-            coroutine_t* co = &s_co;
+            if(sorted != true) 
+            {
+                // Find current Sorting Algorithm
+                if( map.find(sortingAlgos[currentAlgo]) != map.end() )
+                {
+                        sortingFunction algorithmSorter = map.find(sortingAlgos[currentAlgo])->second;
+                        sorted = algorithmSorter(arrayToSort, _countOf(arrayToSort), co);
+                }
 
-            if(sorted != true) {
-                //TODO: FIx this logic
-                sorted = funcs[currentAlgo](arrayToSort, _countOf(arrayToSort), co);
+                
                 // Copy current state of sorted array to be displayed 
                 copyArryIntToFloat(arrayToSort, _countOf(arrayToSort), sortedFloats);
             }
@@ -183,7 +206,6 @@ int main(int, char**)
                 ImPlot::PlotBars(sortingAlgos[currentAlgo], sortedFloats, _countOf(sortedFloats), 0.67);
                 ImPlot::PopStyleColor();
 
-
                 //Highlight cursor Position onto the plot
                 ImPlot::PushStyleColor(ImPlotCol_Fill, PLOT_BARS_CURSOR_COLOR);
                 unsigned int cursorValue = (sortedFloats[co->cursorPosition]);
@@ -192,6 +214,10 @@ int main(int, char**)
 
                 ImPlot::EndPlot();
             }
+
+            stdSorted = std::is_sorted(std::begin(arrayToSort), std::end(arrayToSort));
+            stdSorted ? ImGui::TextColored(ImVec4(0.034,1.0f,0.120,0.784), "Sorted: true") :
+                ImGui::TextColored(ImVec4(1.0f,0.621,0.010,0.784), "Sorted: false");
 
             ImGui::End();
         }

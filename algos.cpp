@@ -2,12 +2,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <vector>
 #include "coroutine.h"
 
 #define _countOf(_Array) (sizeof(_Array) / sizeof(_Array[0]))
 
 //TODO: Change this to be a dynamic mem alocation
-int randomInts[50];
+int randomInts[100];
 
 inline static
 void copyArryInt(int* src, int n, int* dest) {
@@ -69,7 +70,7 @@ bool selectionSort(int* arrayToSort, int count, coroutine_t* co){
             }
             //PUT cursor here
             co->cursorPosition = j;
-            COROUTINE_WAIT(co, 2, 1.0f);
+            COROUTINE_WAIT(co, co->time, co->dt);
         }
     }
 
@@ -103,8 +104,7 @@ bool bubleSort(int* arrayToSort, int count, coroutine_t* co){
             }
             //PUT cursor here
             co->cursorPosition = j;
-            //COROUTINE_YIELD(co);
-            COROUTINE_WAIT(co, 10, 5.0f);
+            COROUTINE_WAIT(co, co->time, co->dt);
         }
     }
 
@@ -121,52 +121,137 @@ bool bubleSort(int* arrayToSort, int count, coroutine_t* co){
     // itemRight: starting Right, item larger than pivot;
     // Swap itemLeft with pivot if itemLeft_index < itemRight_index;
 
-
+// The iterative version had to be used to be compitable with this Coroutines implementation
 inline static
-int partition(int arr[], int low, int high, coroutine_t* co) {
+bool quickSort(int arrayToSort[], int count, coroutine_t* co) {
 
-	int pivot = arr[high];  // pivot
-	int i = (low - 1);  // Index of smaller element
-    int j;
+    static int lower, upper;
+    static bool sorted = false;
+    static std::vector<int> stack(count, 0);
+
+    static int top, i, j, pivot_index;
+    static unsigned pivot;
+
     COROUTINE_START(co);
-	for (j = low; j <= high - 1; j++)
-	{
-		// If current element is smaller than the pivot
-		if (arr[j] < pivot)
-		{
-			i++;  // increment index of smaller element
-			swap(&arr[i], &arr[j]);
-        
-            //PUT cursor here
-            //co->cursorPosition = i;
-            COROUTINE_WAIT(co, 10, 5.0f);
+    sorted = false;
+    lower = 0;
+    upper = count-1;
+
+    top = -1;
+    stack[++top] = lower;
+    stack[++top] = upper;
+
+    while (top >= 0) {
+        upper = stack[top--];
+        lower = stack[top--];
+
+        pivot_index = lower + (upper - lower) / 2;
+        pivot = arrayToSort[upper];
+        i = (lower - 1);
+
+        for (j = lower; j <= upper - 1; j++) {
+            if (arrayToSort[j] <= pivot) {
+                i++;
+                swap(&arrayToSort[i], &arrayToSort[j]);
+            }
+
+            // Put cursor
+            co->cursorPosition = j;
+            COROUTINE_WAIT(co, co->time, co->dt);
         }
-	}
-	swap(&arr[i + 1], &arr[high]);
-    COROUTINE_END(co);
-	return (i + 1);
-}
+        // Place the pivot in it's final and correct position
+        pivot_index = i + 1;
+        std::swap(arrayToSort[pivot_index], arrayToSort[upper]);
 
-inline static
-bool quickSort(int arr[], int low, int high, coroutine_t* co) {
+        // Add new sub arrays to stack
+        if (pivot_index - 1 > lower) {
+            stack[++top] = lower;
+            stack[++top] = pivot_index - 1;
+        }
 
-    if (low < high) {
-	/* pi is partitioning index, arr[p] is now
-	   at right place */
-        int pi = partition(arr, low, high, co);
-
-        // Separately sort elements before
-        // partition and after partition
-        quickSort(arr, low, pi - 1, co);
-        quickSort(arr, pi + 1, high, co);
-        return true;
+        if (pivot_index + 1 < upper) {
+            stack[++top] = pivot_index + 1;
+            stack[++top] = upper;
+        }
     }
-        return false;
-}
+    
+    sorted = true;
+    COROUTINE_END(co);
+    return sorted;
+}   
 
+// Heap Sort: O(nlog(n))
+    // Place original array into heap;
+    // Remove heap root (max element), resulting in sorted array;
+    // Update heap structure along the way;
+    // Best case is O(n) -> array already sorted;
 inline static
-bool quickSortCaller(int* arrayToSort, int count, coroutine_t* co){
+bool heapSort(int arrayToSort[], int count, coroutine_t* co) {
 
-    return quickSort(arrayToSort, 0, count - 1, co);
+    static int parent, i, j, parentJ, index;
+    static bool sorted;
+    
+    sorted = false;
+    COROUTINE_START(co);
+    //Make MaxHeap (all parent nodes > than child nodes)
+    for( i = 1; i < count ; i++)
+    {
+        parent = (i-1) / 2;
 
+        // Put cursor
+        co->cursorPosition = i;
+        COROUTINE_WAIT(co, co->time, co->dt);
+
+        if ( arrayToSort[i] > arrayToSort[parent] )
+        {
+            j = i;
+            parentJ = (j-1) / 2;
+            
+            //swap child with parent until child smaller than parent
+            while ( arrayToSort[j] > arrayToSort[(j-1) / 2] )
+            {
+                parentJ = (j-1) / 2;
+                swap(&arrayToSort[j], &arrayToSort[parentJ]);
+                j = parentJ;
+            }
+        }
+
+    }
+    
+    //Swap root node to the end, update the heap structure along the way 
+    for( i = count - 1; i > 0; i--)
+    {
+        // Put cursor
+        co->cursorPosition = i;
+        COROUTINE_WAIT(co, co->time, co->dt);
+        
+        swap(&arrayToSort[0], &arrayToSort[i]);
+
+        index = 1;
+        while ( index < i) 
+        {
+            // Put cursor
+            co->cursorPosition = index;
+            COROUTINE_WAIT(co, co->time, co->dt);
+            
+            parent = (index-1) / 2;
+
+            // If left child < right child, jump to right child
+            if ( arrayToSort[index] < arrayToSort[index + 1]  && (index + 1) < i )
+            {
+                index++;
+            }
+            
+            if ( arrayToSort[index] > arrayToSort[parent] )
+            {
+                swap(&arrayToSort[index], &arrayToSort[parent]);
+            }
+            // Move index up to its child
+            index = (index*2) + 1;
+        }
+    }
+
+    sorted = true;
+    COROUTINE_END(co);
+    return sorted;
 }
