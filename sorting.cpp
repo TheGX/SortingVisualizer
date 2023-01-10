@@ -137,9 +137,7 @@ int main(int, char**)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about ear ImGui!).
-        //if (show_demo_window)
-            ImGui::ShowDemoWindow(&show_demo_window);
+        //ImGui::ShowDemoWindow(&show_demo_window);
         
         // 3. Show another simple window.
         if (show_another_window)
@@ -165,7 +163,42 @@ int main(int, char**)
             ImGui::SliderFloat("##Coroutine_dt", &co->dt, 1, 5);
 
             ImGui::SameLine();
-            if (ImGui::Button("New Random Sequence")) {
+            if (co->paused == false) 
+            {
+                if (ImGui::Button("Pause Coroutine")) 
+                {
+                    co->paused = true;
+                }
+            }
+            else if (ImGui::Button("Unpause Coroutine")) 
+            {
+                co->paused = false;
+            }
+            
+            static bool iterateOnce = false;
+            //Reset iterateOnce and pause the coroutine
+            if (iterateOnce == true) 
+            {
+                co->paused = true;
+                iterateOnce = false;
+            }
+            
+            if (co->paused == true) 
+            {
+                ImGui::SameLine();
+                //Unpause coroutine and mark iterateOnce
+                if (ImGui::Button("Iterate once")) 
+                {
+                    iterateOnce = true;
+                    co->paused = false;
+                    co->dt = co->time-1;
+                }
+
+            }
+            
+            ImGui::SameLine();
+            if (ImGui::Button("New Random Sequence")) 
+            {
                 //TODO: randomInts should not be global, if it is then no need for the size as arg
                 getNRandomInts(_countOf(randomInts));
            
@@ -183,7 +216,7 @@ int main(int, char**)
                 ImPlot::EndPlot();
             }
             
-            if(sorted != true) 
+            if(sorted != true && co->paused != true) 
             {
                 // Find current Sorting Algorithm
                 if( map.find(sortingAlgos[currentAlgo]) != map.end() )
@@ -218,7 +251,7 @@ int main(int, char**)
             stdSorted = std::is_sorted(std::begin(arrayToSort), std::end(arrayToSort));
             stdSorted ? ImGui::TextColored(ImVec4(0.034,1.0f,0.120,0.784), "Sorted: true") :
                 ImGui::TextColored(ImVec4(1.0f,0.621,0.010,0.784), "Sorted: false");
-
+            
             ImGui::End();
         }
         

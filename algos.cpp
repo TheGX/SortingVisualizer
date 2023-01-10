@@ -198,10 +198,6 @@ bool heapSort(int arrayToSort[], int count, coroutine_t* co) {
     {
         parent = (i-1) / 2;
 
-        // Put cursor
-        co->cursorPosition = i;
-        COROUTINE_WAIT(co, co->time, co->dt);
-
         if ( arrayToSort[i] > arrayToSort[parent] )
         {
             j = i;
@@ -213,9 +209,17 @@ bool heapSort(int arrayToSort[], int count, coroutine_t* co) {
                 parentJ = (j-1) / 2;
                 swap(&arrayToSort[j], &arrayToSort[parentJ]);
                 j = parentJ;
+                
+                // Put cursor
+                co->cursorPosition = j;
+                COROUTINE_WAIT(co, co->time, co->dt);
+                
             }
         }
 
+        // Put cursor
+        co->cursorPosition = i;
+        COROUTINE_WAIT(co, co->time, co->dt);
     }
     
     //Swap root node to the end, update the heap structure along the way 
@@ -230,10 +234,6 @@ bool heapSort(int arrayToSort[], int count, coroutine_t* co) {
         index = 1;
         while ( index < i) 
         {
-            // Put cursor
-            co->cursorPosition = index;
-            COROUTINE_WAIT(co, co->time, co->dt);
-            
             parent = (index-1) / 2;
 
             // If left child < right child, jump to right child
@@ -248,6 +248,10 @@ bool heapSort(int arrayToSort[], int count, coroutine_t* co) {
             }
             // Move index up to its child
             index = (index*2) + 1;
+            
+            // Put cursor
+            co->cursorPosition = index;
+            COROUTINE_WAIT(co, co->time, co->dt);
         }
     }
 
