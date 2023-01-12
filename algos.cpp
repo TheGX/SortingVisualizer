@@ -8,7 +8,21 @@
 #define _countOf(_Array) (sizeof(_Array) / sizeof(_Array[0]))
 
 //TODO: Change this to be a dynamic mem alocation
-int randomInts[100];
+int randomInts[10];
+
+inline static
+void swap(int* a, int*b) 
+{
+    int tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
+
+inline static
+int min(int a, int b) 
+{
+    return (a < b) ? a : b;
+}
 
 inline static
 void copyArryInt(int* src, int n, int* dest) {
@@ -41,13 +55,7 @@ void printArray(int* array, int count) {
     }
 }
 
-inline static
-void swap(int* a, int*b) {
 
-    int tmp = *a;
-    *a = *b;
-    *b = tmp;
-}
 
 // Selection Sort: O(n^2):
     // Run across array, finding min, swap min with the 1st value
@@ -114,7 +122,7 @@ bool bubleSort(int* arrayToSort, int count, coroutine_t* co){
 }
 
 //  Quick Sort: O(nlog(n)) - worst is O(n^2)
-    // Recursive;
+    // Recursive, just not here;
     // Pick a pivot;
     // Swap itemLeft and itemRight:
     // itemLeft: starting left, item smaller than pivot;
@@ -252,6 +260,193 @@ bool heapSort(int arrayToSort[], int count, coroutine_t* co) {
             // Put cursor
             co->cursorPosition = index;
             COROUTINE_WAIT(co, co->time, co->dt);
+        }
+    }
+
+    sorted = true;
+    COROUTINE_END(co);
+    return sorted;
+}
+
+// Insertion Sort: 
+    // Compares each unsorted element with the max of partial sorted;
+    // Creates a sorted partial array at beggingg of array;
+    // Inserts element where it should in partial array;
+    // Best case is O(n) -> array already sorted
+inline static
+bool insertionSort(int arrayToSort[], int count, coroutine_t* co) {
+
+    static bool sorted;
+    static int i, key, j;
+    
+    sorted = false;
+    COROUTINE_START(co);
+    
+    for (i = 1; i < count; i++)
+    {
+       key = arrayToSort[i]; 
+       j = i - 1;
+
+       // Move arrayToSort[0...i-1] elements > key
+       // 1 up to make space 
+       while(j >= 0 && arrayToSort[j] > key)
+       {
+           swap(&arrayToSort[j+1], &arrayToSort[j]);
+            
+           // Put cursor
+           co->cursorPosition = j;
+           COROUTINE_WAIT(co, co->time, co->dt);
+           
+           j--;
+       }
+    }
+
+    sorted = true;
+    COROUTINE_END(co);
+    return sorted;
+}
+
+
+#if 0 
+// MergeSorts the arrayToSort[left, right] elements into arrayToSort
+inline static
+void merge(int* arrayToSort, int left, int middle, int right, coroutine_t* co) {
+
+    int leftSize = middle - left+1; 
+    int rightSize = right - middle;
+
+    // Temp arrays
+    std::vector<int> leftHalf(leftSize), rightHalf(rightSize);
+
+    //Copy value to tmp arrays
+    for (int i = 0; i <= leftSize; i++)
+    {
+        leftHalf[i] = arrayToSort[left + i];
+    }
+    
+    for (int i = 0; i < rightSize; i++)
+    {
+        rightHalf[i] = arrayToSort[middle + i+1];
+    }
+
+    int leftPos = 0, rightPos = 0, arrayToSortPos = left;
+    while (leftPos < leftSize && rightPos < rightSize)
+    {
+        if (leftHalf[leftPos] < rightHalf[rightPos])
+        {
+            arrayToSort[arrayToSortPos++] = leftHalf[leftPos++];
+        }
+        else
+        {
+            arrayToSort[arrayToSortPos++] = rightHalf[rightPos++];
+        }
+    }
+
+    //Append the rest of the larger half 
+    while (leftPos < leftSize)
+    {
+        arrayToSort[arrayToSortPos++] = leftHalf[leftPos++];
+    }
+    
+    while (rightPos < rightSize)
+    {
+        arrayToSort[arrayToSortPos++] = rightHalf[rightPos++];
+    }
+    
+    return;
+}
+#endif  
+
+// Merge Sort: O(nlog(n)) 
+    // Recursive, just not here; Not inplace!
+    // Keep halfing original array into 2 item arrays;
+    // Sort those arrays, and go back up merging them with other sorted arrays;
+inline static
+bool mergeSort(int arrayToSort[], int count, coroutine_t* co) 
+{
+    static bool sorted;
+    static int m, i, from, middle, to;
+    static int right, left;
+    static int leftPos = 0, rightPos = 0, arrayToSortPos;
+    static int leftSize, rightSize;
+    static std::vector<int> leftHalf(0), rightHalf(0);
+
+    sorted = false;
+    COROUTINE_START(co);
+
+    // divide the array into blocks of size `m`
+    // m = [1, 2, 4, 8, 16…]
+    for (m = 1; m <= count-1; m = 2*m)
+    {
+        // Iterate through those blocks
+        // for m = 1, i = 0, 2, 4, 6, 8…
+        // for m = 2, i = 0, 4, 8…
+        for (i = 0; i < count-1; i += 2*m)
+        {
+            left = i;
+            
+            // Given m values, the complete array may not have equal m "parts"
+            // as such the right part might have less elements than the left
+            right = min(i + 2*m - 1, count-1);
+            
+            middle = i + m - 1;
+            if(middle <= right) 
+            {
+
+                leftSize = middle - left+1; 
+                rightSize = right - middle;
+
+                // Temp arrays: 
+                // leftHalf[left, middle] and rightHalf[middle+1, right] 
+                leftHalf.clear(), rightHalf.clear();
+                leftHalf.resize(leftSize), rightHalf.resize(rightSize);
+
+                //Copy value to tmp arrays
+                for (int i = 0; i <= leftSize; i++)
+                {
+                    leftHalf[i] = arrayToSort[left + i];
+                }
+
+                for (int i = 0; i < rightSize; i++)
+                {
+                    rightHalf[i] = arrayToSort[middle + i+1];
+                }
+
+                // Merge the 2 halfs into the sorted array
+                leftPos = 0, rightPos = 0, arrayToSortPos = left;
+                while (leftPos < leftSize && rightPos < rightSize)
+                {
+                    if (leftHalf[leftPos] < rightHalf[rightPos])
+                    {
+                        arrayToSort[arrayToSortPos++] = leftHalf[leftPos++];
+                    }
+                    else
+                    {
+                        arrayToSort[arrayToSortPos++] = rightHalf[rightPos++];
+                    }
+                    //PUT cursor here
+                    co->cursorPosition = arrayToSortPos;
+                    COROUTINE_WAIT(co, co->time, co->dt);
+                }
+
+                //Append the rest of the larger half 
+                while (leftPos < leftSize)
+                {
+                    arrayToSort[arrayToSortPos++] = leftHalf[leftPos++];
+                    //PUT cursor here
+                    co->cursorPosition = arrayToSortPos;
+                    COROUTINE_WAIT(co, co->time, co->dt);
+                }
+
+                while (rightPos < rightSize)
+                {
+                    arrayToSort[arrayToSortPos++] = rightHalf[rightPos++];
+                    //PUT cursor here
+                    co->cursorPosition = arrayToSortPos;
+                    COROUTINE_WAIT(co, co->time, co->dt);
+                }
+
+            }
         }
     }
 

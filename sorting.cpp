@@ -111,7 +111,7 @@ int main(int, char**)
     //inline static const char* algorithmsNames[] = { "BitonicSort", "BogoSort", "CocktailSort", "CombSort", "GnomeSort", 
         //"MergeSort", "PancakeSort", "RadixSort (LSD)", "RadixSort (MSD)", "ShellSort", "StalinSort" };
 
-    sortingFunction funcs[] = { selectionSort, bubleSort, quickSort, heapSort};
+    sortingFunction funcs[] = { selectionSort, bubleSort, quickSort, heapSort, insertionSort, mergeSort};
     std::unordered_map<const char*, sortingFunction> map;
 
     for( int sortingAlgoName = 0; 
@@ -193,7 +193,6 @@ int main(int, char**)
                     co->paused = false;
                     co->dt = co->time-1;
                 }
-
             }
             
             ImGui::SameLine();
