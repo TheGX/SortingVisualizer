@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <cstdlib>
 #include <stdlib.h>
 #include <stdio.h>
@@ -9,6 +10,21 @@
 
 //TODO: Change this to be a dynamic mem alocation
 int randomInts[10];
+
+typedef struct dynamicArray
+{
+    void* data;
+    size_t capacity;
+    size_t size;
+} vector;
+
+inline static
+void freeVector(vector *a) 
+{
+    free(a->data);
+    a->data = NULL;
+    a->capacity = a->size = 0;
+}
 
 inline static
 void swap(int* a, int*b) 
@@ -25,17 +41,38 @@ int min(int a, int b)
 }
 
 inline static
-void copyArryInt(int* src, int n, int* dest) {
+void copyArryInt(int* src, int n, int*& dest) {
+    
+    dest = (int *)realloc(dest, n*sizeof(int));
+
+    for (int i=0 ; i < n; i++) {
+       dest[i] = src[i];
+    }
+}
+
+inline static
+void copyArryIntToFloat(int* src, int n, float*& dest) {
+        
+    dest = (float *)realloc(dest, n*sizeof(float));
     for (int i=0 ; i < n; i++) {
         dest[i] = src[i];
     }
 }
 
 inline static
-void copyArryIntToFloat(int* src, int n, float* dest) {
-        
-    for (int i=0 ; i < n; i++) {
-        dest[i] = src[i];
+void generateNRandomInts(vector* vec, int n)
+{
+    if (n >= vec->capacity)
+    {
+        //TODO: make this error safe?
+        vec->data = (int *)realloc(vec->data, n*sizeof(int));
+        vec->capacity = n;
+        vec->size = n;
+    }
+    
+    srand(time(NULL));
+    for (int i=0; i < vec->size; i++) {
+        ((int*)(vec->data))[i] = rand()%1000;
     }
 }
 
@@ -68,6 +105,7 @@ bool selectionSort(int* arrayToSort, int count, coroutine_t* co){
     
     bool sorted = false;
     static int i=0, j=0;
+    COROUTINE_CHECK_ACTIVE(co);
     COROUTINE_START(co);
     for (i = 0; i < count; i++) {
 
@@ -100,6 +138,7 @@ bool bubleSort(int* arrayToSort, int count, coroutine_t* co){
         
     bool sorted = false;
     static int i=0, j=0;
+    COROUTINE_CHECK_ACTIVE(co);
     COROUTINE_START(co);
     for (i=0; i < count; i++) {
 
@@ -140,6 +179,7 @@ bool quickSort(int arrayToSort[], int count, coroutine_t* co) {
     static int top, i, j, pivot_index;
     static unsigned pivot;
 
+    COROUTINE_CHECK_ACTIVE(co);
     COROUTINE_START(co);
     sorted = false;
     lower = 0;
@@ -200,6 +240,7 @@ bool heapSort(int arrayToSort[], int count, coroutine_t* co) {
     static bool sorted;
     
     sorted = false;
+    COROUTINE_CHECK_ACTIVE(co);
     COROUTINE_START(co);
     //Make MaxHeap (all parent nodes > than child nodes)
     for( i = 1; i < count ; i++)
@@ -280,6 +321,7 @@ bool insertionSort(int arrayToSort[], int count, coroutine_t* co) {
     static int i, key, j;
     
     sorted = false;
+    COROUTINE_CHECK_ACTIVE(co);
     COROUTINE_START(co);
     
     for (i = 1; i < count; i++)
@@ -372,6 +414,7 @@ bool mergeSort(int arrayToSort[], int count, coroutine_t* co)
     static std::vector<int> leftHalf(0), rightHalf(0);
 
     sorted = false;
+    COROUTINE_CHECK_ACTIVE(co);
     COROUTINE_START(co);
 
     // divide the array into blocks of size `m`

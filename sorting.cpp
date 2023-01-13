@@ -93,32 +93,49 @@ int main(int, char**)
     static bool cont = true;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-    float randomFloats[_countOf(randomInts)];
-    int arrayToSort[_countOf(randomInts)];
-    float sortedFloats[_countOf(randomFloats)];
+    int sizeArrayToSort = 10;
+
+    vector DynamicRandomInts = {(int *)malloc(sizeof(int)*10), 10, 0};
+    
+    //vector DynamicRandomInts = {(int *)malloc(sizeof(int)*10), 10, 0};
+    //vector DynamicRandomInts = {(int *)malloc(sizeof(int)*10), 10, 0};
+
+    //vector DynamicRandomInts = {(int *)malloc(sizeof(int)*10), 10, 0};
+    
+    int *arrayToSort;
+
+    //float sortedFloats[_countOf(randomFloats)];
+    float *sortedFloats = nullptr;
+    float *randomFloats = nullptr;
     bool stdSorted; 
             
     static coroutine_t s_co;
     coroutine_t* co = &s_co;
 
-    getNRandomInts(_countOf(randomInts));
+    //getNRandomInts(_countOf(randomInts));
+    generateNRandomInts(&DynamicRandomInts, DynamicRandomInts.capacity);
     //"Reset" array to be sorted back to random
-    copyArryInt(randomInts, _countOf(randomInts), arrayToSort); 
-    copyArryIntToFloat(randomInts, _countOf(randomInts), randomFloats);
+    //copyArryInt(randomInts, _countOf(randomInts), arrayToSort); 
+    copyArryInt((int*)DynamicRandomInts.data, DynamicRandomInts.size, arrayToSort); 
+    
+    //copyArryIntToFloat(randomInts, _countOf(randomInts), randomFloats);
+    copyArryIntToFloat((int*)DynamicRandomInts.data, DynamicRandomInts.size, randomFloats);
+    copyArryIntToFloat((int*)DynamicRandomInts.data, DynamicRandomInts.size, sortedFloats);
 
 
     const char* sortingAlgos[] = { "Selection Sort", "Buble Sort", "Quick Sort", "Heap Sort", "Insertion Sort", "Merge Sort"};
-    //inline static const char* algorithmsNames[] = { "BitonicSort", "BogoSort", "CocktailSort", "CombSort", "GnomeSort", 
-        //"MergeSort", "PancakeSort", "RadixSort (LSD)", "RadixSort (MSD)", "ShellSort", "StalinSort" };
+    // { "BitonicSort", "BogoSort", "CocktailSort", "CombSort", "GnomeSort", 
+        //"MergeSort", "PancakeSort", "RadixSort (LSD)", "RadixSort (MSD)",
+        //"ShellSort", "StalinSort" };
 
     sortingFunction funcs[] = { selectionSort, bubleSort, quickSort, heapSort, insertionSort, mergeSort};
-    std::unordered_map<const char*, sortingFunction> map;
+    std::unordered_map<const char*, sortingFunction> sortingFunctionsMap;
 
     for( int sortingAlgoName = 0; 
             sortingAlgoName < _countOf(sortingAlgos) && sortingAlgoName < _countOf(funcs);
             sortingAlgoName++)
     {
-        map.emplace(sortingAlgos[sortingAlgoName], funcs[sortingAlgoName]);
+        sortingFunctionsMap.emplace(sortingAlgos[sortingAlgoName], funcs[sortingAlgoName]);
     }
             
     // Main loop
@@ -150,14 +167,40 @@ int main(int, char**)
             ImGui::SameLine();
             
             static int currentAlgo = 0;
-            if (ImGui::Combo("##Sorting Algo", &currentAlgo, sortingAlgos, IM_ARRAYSIZE(sortingAlgos))) {
-                
+            if (ImGui::Combo("##Sorting Algo", &currentAlgo, sortingAlgos, IM_ARRAYSIZE(sortingAlgos))) 
+            {
                 // Reset array to replay animation
-                copyArryInt(randomInts, _countOf(randomInts), arrayToSort); 
-                copyArryIntToFloat(randomInts, _countOf(randomInts), randomFloats);
+                //copyArryInt(randomInts, _countOf(randomInts), arrayToSort); 
+                copyArryInt((int*)DynamicRandomInts.data, DynamicRandomInts.size, arrayToSort); 
+
+                //copyArryIntToFloat(randomInts, _countOf(randomInts), randomFloats);
+                copyArryIntToFloat((int*)DynamicRandomInts.data, DynamicRandomInts.size, randomFloats);
                 sorted = false;
             }
             
+            ImGui::Text("Number of elements");
+            ImGui::SameLine();
+            //TODO: make this update the sorting immediately
+            ImGui::SliderInt("##NumberOfElements", (int*)&DynamicRandomInts.capacity, 1, 1000);
+            
+            ImGui::SameLine();
+            co->active = true;
+            if (ImGui::Button("New Random Sequence")) 
+            {
+                //TODO: randomInts should not be global, if it is then no need for the size as arg
+                //getNRandomInts(_countOf(randomInts));
+                generateNRandomInts(&DynamicRandomInts, DynamicRandomInts.capacity);
+           
+                //"Reset" array to be sorted back to random
+                //copyArryInt(randomInts, _countOf(randomInts), arrayToSort); 
+                copyArryInt((int*)DynamicRandomInts.data, DynamicRandomInts.size, arrayToSort); 
+
+                //copyArryIntToFloat(randomInts, _countOf(randomInts), randomFloats);
+                copyArryIntToFloat((int*)DynamicRandomInts.data, DynamicRandomInts.size, randomFloats);
+                co->active = false;
+                sorted = false;
+            }
+
             ImGui::Text("Coroutine Speed time");
             ImGui::SameLine();
             ImGui::SliderFloat("##Coroutine_dt", &co->dt, 1, 5);
@@ -195,38 +238,29 @@ int main(int, char**)
                 }
             }
             
-            ImGui::SameLine();
-            if (ImGui::Button("New Random Sequence")) 
-            {
-                //TODO: randomInts should not be global, if it is then no need for the size as arg
-                getNRandomInts(_countOf(randomInts));
-           
-                //"Reset" array to be sorted back to random
-                copyArryInt(randomInts, _countOf(randomInts), arrayToSort); 
-                copyArryIntToFloat(randomInts, _countOf(randomInts), randomFloats);
-                sorted = false;
-            }
-            
             // Plot current sorted array
             if( ImPlot::BeginPlot("Random Sequence")) {
                 ImPlot::PushStyleColor(ImPlotCol_Fill, PLOT_BARS_NORMAL_COLOR );
-                ImPlot::PlotBars("##Random_Sequence", randomFloats, _countOf(randomFloats), 0.67);
+                //ImPlot::PlotBars("##Random_Sequence", randomFloats, _countOf(randomFloats), 0.67);
+                ImPlot::PlotBars("##Random_Sequence", randomFloats, DynamicRandomInts.size, 0.67);
                 ImPlot::PopStyleColor();
                 ImPlot::EndPlot();
             }
             
-            if(sorted != true && co->paused != true) 
+            if(sorted == false && co->paused != true) 
             {
                 // Find current Sorting Algorithm
-                if( map.find(sortingAlgos[currentAlgo]) != map.end() )
+                if( sortingFunctionsMap.find(sortingAlgos[currentAlgo]) != sortingFunctionsMap.end() )
                 {
-                        sortingFunction algorithmSorter = map.find(sortingAlgos[currentAlgo])->second;
-                        sorted = algorithmSorter(arrayToSort, _countOf(arrayToSort), co);
+                        sortingFunction algorithmSorter =
+                            sortingFunctionsMap.find(sortingAlgos[currentAlgo])->second;
+                        //sorted = algorithmSorter(arrayToSort, _countOf(arrayToSort), co); 
+                        sorted = algorithmSorter(arrayToSort, DynamicRandomInts.size, co);
                 }
-
                 
                 // Copy current state of sorted array to be displayed 
-                copyArryIntToFloat(arrayToSort, _countOf(arrayToSort), sortedFloats);
+                //copyArryIntToFloat(arrayToSort, _countOf(arrayToSort), sortedFloats);
+                copyArryIntToFloat(arrayToSort, DynamicRandomInts.size, sortedFloats);
             }
             
             char plotTitle[30] = "Algorithm: ";
@@ -235,7 +269,8 @@ int main(int, char**)
 
                 // Plot current sorted array
                 ImPlot::PushStyleColor(ImPlotCol_Fill, PLOT_BARS_NORMAL_COLOR );
-                ImPlot::PlotBars(sortingAlgos[currentAlgo], sortedFloats, _countOf(sortedFloats), 0.67);
+                //ImPlot::PlotBars(sortingAlgos[currentAlgo], sortedFloats, _countOf(sortedFloats), 0.67);
+                ImPlot::PlotBars(sortingAlgos[currentAlgo], sortedFloats, DynamicRandomInts.size, 0.67);
                 ImPlot::PopStyleColor();
 
                 //Highlight cursor Position onto the plot
@@ -247,7 +282,7 @@ int main(int, char**)
                 ImPlot::EndPlot();
             }
 
-            stdSorted = std::is_sorted(std::begin(arrayToSort), std::end(arrayToSort));
+            stdSorted = std::is_sorted(arrayToSort, arrayToSort + DynamicRandomInts.size);
             stdSorted ? ImGui::TextColored(ImVec4(0.034,1.0f,0.120,0.784), "Sorted: true") :
                 ImGui::TextColored(ImVec4(1.0f,0.621,0.010,0.784), "Sorted: false");
             
@@ -267,6 +302,9 @@ int main(int, char**)
         glfwSwapBuffers(window);
     }
 
+    freeVector(&DynamicRandomInts);
+    free(arrayToSort);
+    free(randomFloats);
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();

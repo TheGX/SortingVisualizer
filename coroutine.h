@@ -22,10 +22,12 @@ typedef struct coroutine_t
     float dt;
     float time = 5;
     bool paused = false;
+    bool active = true;
     unsigned cursorPosition;
     int index;
 } coroutine_t;
 
+#define COROUTINE_CHECK_ACTIVE(co) if( !(co->active) ){ co->index = 0; COROUTINE_EXIT(co); }
 #define COROUTINE_START(co) do { switch (co->index) { default:
 #define COROUTINE_CASE(co, name) case __LINE__: name: co->index = __LINE__;
 #define COROUTINE_EXIT(co) do { goto __co_end; } while (0)
