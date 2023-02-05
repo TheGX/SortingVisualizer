@@ -1,5 +1,6 @@
 #include <cstddef>
 #include <cstdlib>
+#include <cstring>
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
@@ -8,18 +9,15 @@
 
 #define _countOf(_Array) (sizeof(_Array) / sizeof(_Array[0]))
 
-//TODO: Change this to be a dynamic mem alocation
-int randomInts[10];
-
 typedef struct dynamicArray
 {
     void* data;
     size_t capacity;
     size_t size;
-} vector;
+} Vector;
 
 inline static
-void freeVector(vector *a) 
+void freeVector(Vector *a) 
 {
     free(a->data);
     a->data = NULL;
@@ -41,26 +39,38 @@ int min(int a, int b)
 }
 
 inline static
-void copyArryInt(int* src, int n, int*& dest) {
-    
+void copyArryInt(int* src, int n, int*& dest) 
+{
     dest = (int *)realloc(dest, n*sizeof(int));
-
-    for (int i=0 ; i < n; i++) {
+    for (int i=0 ; i < n; i++) 
+    {
        dest[i] = src[i];
     }
 }
 
 inline static
-void copyArryIntToFloat(int* src, int n, float*& dest) {
-        
+void copyVector(Vector* src, Vector*& dest) 
+{
+    //TODO: only do realloc on dynamic condition that dest.capacity is smaller than src.capacity
+    dest->size = src->size;
+    dest->capacity = src->capacity;
+   
+    dest->data = (int *)realloc(dest->data, dest->capacity*sizeof(int));
+    memcpy(dest->data, src->data, dest->capacity*sizeof(int));
+}
+
+inline static
+void copyArryIntToFloat(int* src, int n, float*& dest) 
+{
     dest = (float *)realloc(dest, n*sizeof(float));
-    for (int i=0 ; i < n; i++) {
+    for (int i=0 ; i < n; i++) 
+    {
         dest[i] = src[i];
     }
 }
 
 inline static
-void generateNRandomInts(vector* vec, int n)
+void generateNRandomInts(Vector* vec, int n)
 {
     if (n >= vec->capacity)
     {
@@ -71,28 +81,20 @@ void generateNRandomInts(vector* vec, int n)
     }
     
     srand(time(NULL));
-    for (int i=0; i < vec->size; i++) {
+    for (int i=0; i < vec->size; i++) 
+    {
         ((int*)(vec->data))[i] = rand()%1000;
     }
 }
 
 inline static
-void getNRandomInts(int n){
-        
-    srand(time(NULL));
-    for (int i=0; i < n; i++) {
-        randomInts[i] = rand()%1000;
-    }
-}
-
-inline static
-void printArray(int* array, int count) {
-    for (int i=0; i < count; i++) {
+void printArray(int* array, int count) 
+{
+    for (int i=0; i < count; i++) 
+    {
         printf("array[%d]: %d\n", i, array[i]);
     }
 }
-
-
 
 // Selection Sort: O(n^2):
     // Run across array, finding min, swap min with the 1st value
@@ -101,10 +103,13 @@ void printArray(int* array, int count) {
     // [6, 12, 3, 7]
     // [3, 12, 6, 7]
 inline static
-bool selectionSort(int* arrayToSort, int count, coroutine_t* co){
-    
-    bool sorted = false;
+bool selectionSort(int* arrayToSort, int count, coroutine_t* co)
+{
+
+    static bool sorted;
     static int i=0, j=0;
+
+    sorted = false;
     COROUTINE_CHECK_ACTIVE(co);
     COROUTINE_START(co);
     for (i = 0; i < count; i++) {
@@ -114,7 +119,7 @@ bool selectionSort(int* arrayToSort, int count, coroutine_t* co){
             if ( arrayToSort[j] < arrayToSort[i] ) {
                 swap(&arrayToSort[j], &arrayToSort[i]);
             }
-            //PUT cursor here
+            //Update cursor position
             co->cursorPosition = j;
             COROUTINE_WAIT(co, co->time, co->dt);
         }
@@ -134,10 +139,12 @@ bool selectionSort(int* arrayToSort, int count, coroutine_t* co){
     // [6, 3, 12, 7]
 
 inline static
-bool bubleSort(int* arrayToSort, int count, coroutine_t* co){
-        
-    bool sorted = false;
+bool bubleSort(int* arrayToSort, int count, coroutine_t* co)
+{
+    static bool sorted;
     static int i=0, j=0;
+
+    sorted = false;
     COROUTINE_CHECK_ACTIVE(co);
     COROUTINE_START(co);
     for (i=0; i < count; i++) {
@@ -149,7 +156,7 @@ bool bubleSort(int* arrayToSort, int count, coroutine_t* co){
             if ( arrayToSort[j] > arrayToSort[j+1] ) {
                 swap(&arrayToSort[j], &arrayToSort[j+1]);
             }
-            //PUT cursor here
+            //Update cursor position
             co->cursorPosition = j;
             COROUTINE_WAIT(co, co->time, co->dt);
         }
@@ -170,18 +177,18 @@ bool bubleSort(int* arrayToSort, int count, coroutine_t* co){
 
 // The iterative version had to be used to be compitable with this Coroutines implementation
 inline static
-bool quickSort(int arrayToSort[], int count, coroutine_t* co) {
-
+bool quickSort(int arrayToSort[], int count, coroutine_t* co) 
+{
     static int lower, upper;
-    static bool sorted = false;
+    static bool sorted;
     static std::vector<int> stack(count, 0);
 
     static int top, i, j, pivot_index;
     static unsigned pivot;
 
+    sorted = false;
     COROUTINE_CHECK_ACTIVE(co);
     COROUTINE_START(co);
-    sorted = false;
     lower = 0;
     upper = count-1;
 
@@ -203,7 +210,7 @@ bool quickSort(int arrayToSort[], int count, coroutine_t* co) {
                 swap(&arrayToSort[i], &arrayToSort[j]);
             }
 
-            // Put cursor
+            // Update cursor position
             co->cursorPosition = j;
             COROUTINE_WAIT(co, co->time, co->dt);
         }
@@ -234,8 +241,8 @@ bool quickSort(int arrayToSort[], int count, coroutine_t* co) {
     // Update heap structure along the way;
     // Best case is O(n) -> array already sorted;
 inline static
-bool heapSort(int arrayToSort[], int count, coroutine_t* co) {
-
+bool heapSort(int arrayToSort[], int count, coroutine_t* co) 
+{
     static int parent, i, j, parentJ, index;
     static bool sorted;
     
@@ -259,14 +266,14 @@ bool heapSort(int arrayToSort[], int count, coroutine_t* co) {
                 swap(&arrayToSort[j], &arrayToSort[parentJ]);
                 j = parentJ;
                 
-                // Put cursor
+                // Update cursor position
                 co->cursorPosition = j;
                 COROUTINE_WAIT(co, co->time, co->dt);
                 
             }
         }
 
-        // Put cursor
+        // Update cursor position
         co->cursorPosition = i;
         COROUTINE_WAIT(co, co->time, co->dt);
     }
@@ -274,14 +281,14 @@ bool heapSort(int arrayToSort[], int count, coroutine_t* co) {
     //Swap root node to the end, update the heap structure along the way 
     for( i = count - 1; i > 0; i--)
     {
-        // Put cursor
+        // Update cursor position
         co->cursorPosition = i;
         COROUTINE_WAIT(co, co->time, co->dt);
         
         swap(&arrayToSort[0], &arrayToSort[i]);
 
-        index = 1;
-        while ( index < i) 
+        // Run through the heap, jumping from child to child
+        for (index = 1; index < i; index = (index*2) + 1) 
         {
             parent = (index-1) / 2;
 
@@ -295,10 +302,9 @@ bool heapSort(int arrayToSort[], int count, coroutine_t* co) {
             {
                 swap(&arrayToSort[index], &arrayToSort[parent]);
             }
-            // Move index up to its child
-            index = (index*2) + 1;
+            //index = (index*2) + 1;
             
-            // Put cursor
+            // Update cursor position
             co->cursorPosition = index;
             COROUTINE_WAIT(co, co->time, co->dt);
         }
@@ -315,8 +321,8 @@ bool heapSort(int arrayToSort[], int count, coroutine_t* co) {
     // Inserts element where it should in partial array;
     // Best case is O(n) -> array already sorted
 inline static
-bool insertionSort(int arrayToSort[], int count, coroutine_t* co) {
-
+bool insertionSort(int arrayToSort[], int count, coroutine_t* co) 
+{
     static bool sorted;
     static int i, key, j;
     
@@ -335,7 +341,7 @@ bool insertionSort(int arrayToSort[], int count, coroutine_t* co) {
        {
            swap(&arrayToSort[j+1], &arrayToSort[j]);
             
-           // Put cursor
+           // Update cursor position
            co->cursorPosition = j;
            COROUTINE_WAIT(co, co->time, co->dt);
            
@@ -347,57 +353,6 @@ bool insertionSort(int arrayToSort[], int count, coroutine_t* co) {
     COROUTINE_END(co);
     return sorted;
 }
-
-
-#if 0 
-// MergeSorts the arrayToSort[left, right] elements into arrayToSort
-inline static
-void merge(int* arrayToSort, int left, int middle, int right, coroutine_t* co) {
-
-    int leftSize = middle - left+1; 
-    int rightSize = right - middle;
-
-    // Temp arrays
-    std::vector<int> leftHalf(leftSize), rightHalf(rightSize);
-
-    //Copy value to tmp arrays
-    for (int i = 0; i <= leftSize; i++)
-    {
-        leftHalf[i] = arrayToSort[left + i];
-    }
-    
-    for (int i = 0; i < rightSize; i++)
-    {
-        rightHalf[i] = arrayToSort[middle + i+1];
-    }
-
-    int leftPos = 0, rightPos = 0, arrayToSortPos = left;
-    while (leftPos < leftSize && rightPos < rightSize)
-    {
-        if (leftHalf[leftPos] < rightHalf[rightPos])
-        {
-            arrayToSort[arrayToSortPos++] = leftHalf[leftPos++];
-        }
-        else
-        {
-            arrayToSort[arrayToSortPos++] = rightHalf[rightPos++];
-        }
-    }
-
-    //Append the rest of the larger half 
-    while (leftPos < leftSize)
-    {
-        arrayToSort[arrayToSortPos++] = leftHalf[leftPos++];
-    }
-    
-    while (rightPos < rightSize)
-    {
-        arrayToSort[arrayToSortPos++] = rightHalf[rightPos++];
-    }
-    
-    return;
-}
-#endif  
 
 // Merge Sort: O(nlog(n)) 
     // Recursive, just not here; Not inplace!
@@ -467,8 +422,8 @@ bool mergeSort(int arrayToSort[], int count, coroutine_t* co)
                     {
                         arrayToSort[arrayToSortPos++] = rightHalf[rightPos++];
                     }
-                    //PUT cursor here
-                    co->cursorPosition = arrayToSortPos;
+                    //Update cursor position
+                    co->cursorPosition = arrayToSortPos - 1;
                     COROUTINE_WAIT(co, co->time, co->dt);
                 }
 
@@ -476,16 +431,16 @@ bool mergeSort(int arrayToSort[], int count, coroutine_t* co)
                 while (leftPos < leftSize)
                 {
                     arrayToSort[arrayToSortPos++] = leftHalf[leftPos++];
-                    //PUT cursor here
-                    co->cursorPosition = arrayToSortPos;
+                    //Update cursor position
+                    co->cursorPosition = arrayToSortPos - 1;
                     COROUTINE_WAIT(co, co->time, co->dt);
                 }
 
                 while (rightPos < rightSize)
                 {
                     arrayToSort[arrayToSortPos++] = rightHalf[rightPos++];
-                    //PUT cursor here
-                    co->cursorPosition = arrayToSortPos;
+                    //Update cursor position
+                    co->cursorPosition = arrayToSortPos - 1;
                     COROUTINE_WAIT(co, co->time, co->dt);
                 }
 
@@ -496,4 +451,16 @@ bool mergeSort(int arrayToSort[], int count, coroutine_t* co)
     sorted = true;
     COROUTINE_END(co);
     return sorted;
+}
+
+inline static
+void updateSequence(Vector* randomInts, Vector*& vectorToSort, 
+                    coroutine_t* co, bool& sorted)
+{
+    generateNRandomInts(randomInts, randomInts->capacity);
+
+    //"Reset" array to be sorted back to random
+    copyVector(randomInts, vectorToSort);
+    co->active = false;
+    sorted = false;
 }
