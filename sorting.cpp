@@ -17,7 +17,7 @@
 #include "Includes/implot_internal.h"
 #include "Includes/implot.cpp"
 #include "Includes/implot_items.cpp"
-#include "algos.cpp"
+#include "SortingAlgos/sortingAlgos.h"
 #include "algorithm"
 #include "unordered_map"
 
