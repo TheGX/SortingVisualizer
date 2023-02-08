@@ -14,6 +14,9 @@ The use of Coroutines seemed adequate here given the general flowchart I had in 
 With this logic in mind, the choice for ImGui and ImPlot for rendering the UI
 seemed obvious since they render the screen every frame.
 
+## Demo:
+![Alt Text](Demo.gif)
+
 ## Approach problems:
 Soon after I start implementing this approach, I understood some general problems.
 
