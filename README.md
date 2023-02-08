@@ -42,7 +42,7 @@ do {
 } while (0)
 ```
 
-By storing the __LINE__ where execution was last left off (before exiting the
+By storing the \__LINE__ where execution was last left off (before exiting the
 switch case statement) in the coroutine_t struct co->index variable, you can then pick
 back up the next time you pass on through.
 
@@ -51,7 +51,7 @@ The problem with this logic inside recursion based algorithms, is that once you
 clear way of knowing at which point of the recursion you entered the switch.
 
 - "Solution": Iterative implementations of the sorting algorithms. Not
-  necessarly bad by itself, but leaves some implementations a lot messier.
+  necessarily bad by itself, but leaves some implementations a lot messier.
 
 ### "Code styling" specially regarding static variables.
 
