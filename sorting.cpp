@@ -1,8 +1,3 @@
-// Dear ImGui: standalone example application for GLFW + OpenGL 3, using programmable pipeline
-// (GLFW is a cross-platform general purpose library for handling windows, inputs, OpenGL/Vulkan/Metal graphics context creation, etc.)
-// If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of imgui.cpp.
-// Read online: https://github.com/ocornut/imgui/tree/master/docs
-
 #include "Includes/imgui.h"
 #include "Includes/imgui_impl_glfw.h"
 #include "Includes/imgui_impl_opengl3.h"
@@ -21,22 +16,11 @@
 #include "algorithm"
 #include "unordered_map"
 
-// [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
-// To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma.
-// Your own project should not be affected, as you are likely to link with a newer binary of GLFW that is adequate for your version of Visual Studio.
-#if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
-#pragma comment(lib, "legacy_stdio_definitions")
-#endif
-
-
-typedef bool (*sortingFunction) (int* arrayToSort, int count, coroutine_t* co);
-
 static ImVec4 PLOT_BARS_NORMAL_COLOR = {0.2f, 0.41f, 0.69f, 1.f};
 static ImVec4 PLOT_BARS_CURSOR_COLOR = {1.f, 0.f, 0.f, 1.f};
 static ImVec4 PLOT_CURSOR_COLOR = {1.f, 0.f, 0.f, 1.f};
 static ImVec4 ImVec4Orange = {1.0f,0.621,0.010,0.784};
 static ImVec4 ImVec4Green = {0.034,1.0f,0.120,0.784};
-
 
 static void glfw_error_callback(int error, const char* description)
 {
@@ -72,7 +56,7 @@ int main(int, char**)
 #endif
 
     // Create window with graphics context
-    GLFWwindow* window = glfwCreateWindow(1900, 900, "Sorting algos", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(1900, 900, "Sorting Visualizer", NULL, NULL);
     if (window == NULL)
         return 1;
     glfwMakeContextCurrent(window);
@@ -84,19 +68,16 @@ int main(int, char**)
     ImPlot::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
-    // Setup Dear ImGui style
+    // Setup Dear ImGui and ImPlot style
     ImGui::StyleColorsDark();
     ImPlot::StyleColorsDark();
     
-
-
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // Our state
     bool show_demo_window = true;
-    bool show_another_window = true;
     static bool sorted = false;
     static bool cont = true;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
@@ -115,43 +96,36 @@ int main(int, char**)
         .size = 0
     };
 
-    bool stdSorted; 
             
     static coroutine_t s_co;
     coroutine_t* co = &s_co;
 
     generateNRandomInts(&randomInts, randomInts.capacity);
-    //"Reset" array to be sorted back to random
-    //copyArryIntToFloat((int*)randomInts.data, randomInts.size, sortedFloats);
-
     Vector* pSortedValues = &sortedValues;
     copyVector(&randomInts, pSortedValues);
 
-    const char* sortingAlgos[] = { "Selection Sort", "Buble Sort", "Quick Sort", "Heap Sort", "Insertion Sort", "Merge Sort"};
-    // { "BitonicSort", "BogoSort", "CocktailSort", "CombSort", "GnomeSort", 
-        //"MergeSort", "PancakeSort", "RadixSort (LSD)", "RadixSort (MSD)",
-        //"ShellSort", "StalinSort" };
+    const char* sortingAlgos[] = { "Selection Sort", "Buble Sort", "QuickSort",
+        "Heap Sort", "Insertion Sort", "Merge Sort"};
+    /* { "BitonicSort", "BogoSort", "CocktailSort", "CombSort", "GnomeSort", 
+        "MergeSort", "PancakeSort", "RadixSort (LSD)", "RadixSort (MSD)",
+        "ShellSort", "StalinSort" }; */
 
-    sortingFunction funcs[] = { selectionSort, bubleSort, quickSort, heapSort, insertionSort, mergeSort};
+    sortingFunction sortingFuncs[] = { selectionSort, bubleSort, quickSort, heapSort,
+        insertionSort, mergeSort};
     std::unordered_map<const char*, sortingFunction> sortingFunctionsMap;
 
     // Build Sorting Function Map
     for( int sortingAlgoName = 0; 
-            sortingAlgoName < _countOf(sortingAlgos) && sortingAlgoName < _countOf(funcs);
+            sortingAlgoName < _countOf(sortingAlgos) && sortingAlgoName < _countOf(sortingFuncs);
             sortingAlgoName++)
     {
-        sortingFunctionsMap.emplace(sortingAlgos[sortingAlgoName], funcs[sortingAlgoName]);
+        sortingFunctionsMap.emplace(sortingAlgos[sortingAlgoName], sortingFuncs[sortingAlgoName]);
     }
             
     // Main loop
     while (!glfwWindowShouldClose(window))
     {
 
-        // Poll and handle events (inputs, window resize, etc.)
-        // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
-        // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
-        // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
-        // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
         glfwPollEvents();
 
         // Start the Dear ImGui frame
@@ -161,149 +135,147 @@ int main(int, char**)
 
         //ImGui::ShowDemoWindow(&show_demo_window);
         
-        // 3. Show another simple window.
-        if (show_another_window)
+        ImGui::SetNextWindowSize(ImVec2(1729, 713),ImGuiCond_Always);
+        ImGui::Begin("Sorting Algorithm Window");   
+        ImGui::PushItemWidth(126);
+        
+        // Activate Coroutine
+        co->active = true;
+
+        // Algorithm drop-down menu
+        ImGui::Text("Sorting Algorithms:");
+        ImGui::SameLine();
+
+        static int currentAlgo = 0;
+        if (ImGui::Combo("##Sorting Algo", &currentAlgo, sortingAlgos, _countOf(sortingAlgos))) 
         {
-            ImGui::SetNextWindowSize(ImVec2(1729, 713),ImGuiCond_Always);
-            ImGui::Begin("Sorting Algorithm Window", &show_another_window);   
+            // Reset array to replay animation
+            copyVector(&randomInts, pSortedValues);
+            sorted = false;
+        }
 
-            ImGui::PushItemWidth(126);
+        // ImPlot Styling drop-down menu
+        ImGui::SameLine();
+        ImGui::Text("Plot Styling:");
+        ImGui::SameLine();
 
-            // Algorithm drop Menu
-            ImGui::Text("Sorting Algorithms:");
-            ImGui::SameLine();
-            
-            static int currentAlgo = 0;
-            if (ImGui::Combo("##Sorting Algo", &currentAlgo, sortingAlgos, IM_ARRAYSIZE(sortingAlgos))) 
-            {
-                // Reset array to replay animation
-                copyVector(&randomInts, pSortedValues);
-                sorted = false;
-            }
-            
-            ImGui::SameLine();
-            ImGui::Text("Plot Styling:");
-            ImGui::SameLine();
-
-            ImPlotContext &gp = *ImPlot::GetCurrentContext();
-            if (ImGui::BeginCombo("##PlotStyling", gp.ColormapData.GetName(gp.Style.Colormap))) {
-                for (int i = 0; i < gp.ColormapData.Count; ++i) {
-                    const char* name = gp.ColormapData.GetName(i);
-                    if (ImGui::Selectable(name, gp.Style.Colormap == i)) {
-                        gp.Style.Colormap = i;
-                        ImPlot::BustItemCache();
-                    }
-                }
-                ImGui::EndCombo();
-            }       
-            
-            ImGui::SameLine();
-            stdSorted = std::is_sorted((int*)sortedValues.data, (int*)sortedValues.data + sortedValues.size);
-            stdSorted ? ImGui::TextColored(ImVec4Green, "Sorted: true") :
-                ImGui::TextColored(ImVec4Orange, "Sorted: false");
-            
-            ImGui::PopItemWidth();
-            
-            ImGui::PushItemWidth(252);
-            ImGui::Text("Number of elements");
-            
-            ImGui::SameLine();
-            if (ImGui::SliderInt("##NumberOfElements", (int*)&randomInts.capacity, 1, 500))
-            {
-                updateSequence(&randomInts, pSortedValues, co, sorted);
-            }
-            
-            ImGui::SameLine();
-            if (ImGui::Button("New Random Sequence")) 
-            {
-                updateSequence(&randomInts, pSortedValues, co, sorted);
-            }
-
-            ImGui::Text("Coroutine Speed time");
-            ImGui::SameLine();
-            ImGui::SliderFloat("##Coroutine_dt", &co->dt, 1, 5);
-
-            ImGui::SameLine();
-            if (co->paused == false) 
-            {
-                if (ImGui::Button("Pause Coroutine")) 
-                {
-                    co->paused = true;
+        ImPlotContext &gp = *ImPlot::GetCurrentContext();
+        if (ImGui::BeginCombo("##PlotStyling", gp.ColormapData.GetName(gp.Style.Colormap))) {
+            for (int i = 0; i < gp.ColormapData.Count; ++i) {
+                const char* name = gp.ColormapData.GetName(i);
+                if (ImGui::Selectable(name, gp.Style.Colormap == i)) {
+                    gp.Style.Colormap = i;
+                    ImPlot::BustItemCache();
                 }
             }
-            else if (ImGui::Button("Unpause Coroutine")) 
+            ImGui::EndCombo();
+        }       
+
+        // Color check if array is sorted
+        ImGui::SameLine();
+        bool stdSorted = std::is_sorted( (int*)sortedValues.data, (int*)sortedValues.data + sortedValues.size);
+        stdSorted ? ImGui::TextColored(ImVec4Green, "Sorted: true") :
+            ImGui::TextColored(ImVec4Orange, "Sorted: false");
+
+        ImGui::PopItemWidth();
+        ImGui::PushItemWidth(252);
+        ImGui::Text("Number of elements");
+
+        ImGui::SameLine();
+        if (ImGui::SliderInt("##NumberOfElements", (int*)&randomInts.capacity, 1, 500))
+        {
+            updateSequence(&randomInts, pSortedValues, co, sorted);
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button("New Random Sequence")) 
+        {
+            updateSequence(&randomInts, pSortedValues, co, sorted);
+        }
+
+        ImGui::Text("Coroutine Speed time");
+        ImGui::SameLine();
+        ImGui::SliderFloat("##Coroutine_dt", &co->dt, 1, 5);
+
+        static bool iterateOnce = false;
+
+        // Pause coroutine after 1 iteration if iterateOnce was pressed
+        if (iterateOnce == true) 
+        {
+            co->paused = true;
+            iterateOnce = false;
+        }
+
+        ImGui::SameLine();
+        if (co->paused == false) 
+        {
+            // Option to pause coroutine
+            if (ImGui::Button("Pause Coroutine")) 
+            {
+                co->paused = true;
+            }
+        }
+        else 
+        {
+            // Coroutine is paused, iterate once option is available
+            ImGui::SameLine();
+            if (ImGui::Button("Iterate once")) 
+            {
+                // Mark iterateOnce option and unpause coroutine for 1 run
+                iterateOnce = true;
+                co->paused = false;
+                co->dt = co->time-1;
+            }
+            
+            //Unpause coroutine 
+            ImGui::SameLine();
+            if (ImGui::Button("Unpause Coroutine"))
             {
                 co->paused = false;
             }
-            
-            static bool iterateOnce = false;
-            //Reset iterateOnce and pause the coroutine if true
-            if (iterateOnce == true) 
-            {
-                co->paused = true;
-                iterateOnce = false;
-            }
-            
-            if (co->paused == true) 
-            {
-                ImGui::SameLine();
-                //Unpause coroutine and mark iterateOnce
-                if (ImGui::Button("Iterate once")) 
-                {
-                    iterateOnce = true;
-                    co->paused = false;
-                    co->dt = co->time-1;
-                }
-            }
-            
-            ImGui::PopItemWidth();
-            
-            // Plot random array
-            static ImPlotAxisFlags xflags = ImPlotAxisFlags_AutoFit ; 
-            static ImPlotAxisFlags yflags = ImPlotAxisFlags_AutoFit ; 
-
-            if( ImPlot::BeginPlot("Random Sequence")) 
-            {
-                ImPlot::SetupAxes("", "Random Sequence", xflags, yflags);
-                ImPlot::PlotBars("##Random_Sequence", (int*)randomInts.data, randomInts.size, 0.67);
-                ImPlot::EndPlot();
-            }
-            
-            if(sorted == false && co->paused != true) 
-            {
-                // Find current Sorting Algorithm
-                if( sortingFunctionsMap.find(sortingAlgos[currentAlgo]) != sortingFunctionsMap.end() )
-                {
-                        sortingFunction algorithmSorter =
-                            sortingFunctionsMap.find(sortingAlgos[currentAlgo])->second;
-                        sorted = algorithmSorter((int*)sortedValues.data, sortedValues.size, co);
-                }
-            }
-            
-            char plotTitle[30] = "Algorithm: ";
-            strcat(plotTitle, sortingAlgos[currentAlgo]);
-            if( ImPlot::BeginPlot(plotTitle) ) 
-            {
-                // Plot current sorted array
-                ImPlot::SetupAxes("", "Random Sequence", xflags, yflags);
-                ImPlot::PlotBars(sortingAlgos[currentAlgo], (int*)sortedValues.data, sortedValues.size, 0.67);
-
-                //Highlight cursor Position onto the plot
-                ImPlot::PushStyleColor(ImPlotCol_Fill, PLOT_CURSOR_COLOR);
-                //unsigned int cursorValue = (sortedFloats[co->cursorPosition]);
-                unsigned int cursorValue = (((int*)sortedValues.data)[co->cursorPosition]);
-                ImPlot::PlotBars("##Cursor", &(co->cursorPosition), &cursorValue, 1, 0.67f);
-                ImPlot::PopStyleColor();
-
-                ImPlot::EndPlot();
-            }
-            
-            // TODO:Place this in a better place
-            // Activate Coroutine
-            co->active = true;
-
-            ImGui::End();
         }
+
+        ImGui::PopItemWidth();
+
+        // Plot random array
+        if( ImPlot::BeginPlot("Random Sequence")) 
+        {
+            ImPlot::SetupAxes("", "Random Sequence", ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_AutoFit);
+            ImPlot::PlotBars("##Random_Sequence", (int*)randomInts.data, randomInts.size, 0.67);
+            ImPlot::EndPlot();
+        }
+
+        // Run sorting algorithm 
+        if(sorted == false && co->paused != true) 
+        {
+            // Find current Sorting Algorithm
+            if( sortingFunctionsMap.find(sortingAlgos[currentAlgo]) != sortingFunctionsMap.end() )
+            {
+                sortingFunction algorithmSorter =
+                    sortingFunctionsMap.find(sortingAlgos[currentAlgo])->second;
+                
+                sorted = algorithmSorter((int*)sortedValues.data, sortedValues.size, co);
+            }
+        }
+
+        // Plot current sorted array
+        char plotTitle[30] = "Algorithm: ";
+        strcat(plotTitle, sortingAlgos[currentAlgo]);
+        if( ImPlot::BeginPlot(plotTitle) ) 
+        {
+            ImPlot::SetupAxes("", "Sorted Sequence", ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_AutoFit);
+            ImPlot::PlotBars(sortingAlgos[currentAlgo], (int*)sortedValues.data, sortedValues.size, 0.67);
+
+            //Highlight cursor Position onto the plot
+            ImPlot::PushStyleColor(ImPlotCol_Fill, PLOT_CURSOR_COLOR);
+            unsigned int cursorValue = ((int*)sortedValues.data)[co->cursorPosition];
+            ImPlot::PlotBars("##Cursor", &(co->cursorPosition), &cursorValue, 1, 0.67f);
+            ImPlot::PopStyleColor();
+
+            ImPlot::EndPlot();
+        }
+
+        ImGui::End();
         
         // Rendering
         ImGui::Render();
@@ -318,9 +290,10 @@ int main(int, char**)
         glfwSwapBuffers(window);
     }
 
-    freeVector(&randomInts);
-    
     // Cleanup
+    freeVector(&randomInts);
+    freeVector(&sortedValues);
+    
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImPlot::DestroyContext();

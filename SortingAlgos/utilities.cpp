@@ -9,6 +9,8 @@
 
 #define _countOf(_Array) (sizeof(_Array) / sizeof(_Array[0]))
 
+typedef bool (*sortingFunction) (int* arrayToSort, int count, coroutine_t* co);
+
 typedef struct dynamicArray
 {
     void* data;
@@ -39,16 +41,6 @@ int min(int a, int b)
 }
 
 inline static
-void copyArryInt(int* src, int n, int*& dest) 
-{
-    dest = (int *)realloc(dest, n*sizeof(int));
-    for (int i=0 ; i < n; i++) 
-    {
-       dest[i] = src[i];
-    }
-}
-
-inline static
 void copyVector(Vector* src, Vector*& dest) 
 {
     //TODO: only do realloc on dynamic condition that dest.capacity is smaller than src.capacity
@@ -74,15 +66,6 @@ void generateNRandomInts(Vector* vec, int n)
     for (int i=0; i < vec->size; i++) 
     {
         ((int*)(vec->data))[i] = rand()%1000;
-    }
-}
-
-inline static
-void printArray(int* array, int count) 
-{
-    for (int i=0; i < count; i++) 
-    {
-        printf("array[%d]: %d\n", i, array[i]);
     }
 }
 

@@ -42,7 +42,7 @@ do {
 } while (0)
 ```
 
-By storing the \__LINE__ where execution was last left off (before exiting the
+By storing the \_\_LINE\_\_ where execution was last left off (before exiting the
 switch case statement) in the coroutine_t struct co->index variable, you can then pick
 back up the next time you pass on through.
 
@@ -56,8 +56,6 @@ clear way of knowing at which point of the recursion you entered the switch.
 ### "Code styling" specially regarding static variables.
 
 -----------------------------------
-##TODO: 
- - [x] Dynamic array sizes;
- - [x] Add step through option;
- - [x] Dynamic Coroutine wait time;
+## TODO: 
  - Add pivot to IMPLOT in special algos;
+ - Add heap view to visualize the sorting process behind heap implementations;
